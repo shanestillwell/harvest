@@ -16,7 +16,9 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"fmt"
+	"net/http"
 
 	"github.com/spf13/cobra"
 )
@@ -43,4 +45,16 @@ func init() {
 	// Cobra supports local flags which will only run when this command is called directly
 	// loginCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle" )
 
+}
+
+func login(cmd *cobra.Command, args []string) {
+	req, err := http.NewRequest("POST", "https://harvest.com/api", nil)
+	if err != nil {
+		// exit if failed
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		// exit with some message
+	}
+	// Write auth header to .yaml file
 }
