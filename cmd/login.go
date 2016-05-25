@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -50,11 +51,15 @@ func init() {
 func login(cmd *cobra.Command, args []string) {
 	req, err := http.NewRequest("POST", "https://harvest.com/api", nil)
 	if err != nil {
-		// exit if failed
+		fmt.Printf("Error creating new HTTP request: %s\n", err.Error())
+		os.Exit(-1)
+		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		// exit with some message
+		fmt.Printf("Error during HTTP request: %s\n", err.Error())
+		os.Exit(-1)
+		return
 	}
-	// Write auth header to .yaml file
+
 }
