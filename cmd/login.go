@@ -25,6 +25,8 @@ import (
 	"github.com/docker/docker-credential-helpers/credentials"
 	"github.com/docker/docker-credential-helpers/osxkeychain"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var secretStore = &osxkeychain.Osxkeychain{}
@@ -41,7 +43,6 @@ func init() {
 	RootCmd.AddCommand(loginCmd)
 
 	loginCmd.PersistentFlags().String("email", "", "the email associated with your Harvest account")
-	loginCmd.PersistentFlags().String("password", "", "the password associated with your Harvest account")
 	loginCmd.PersistentFlags().String("org", "", "the organization you belong to on Harvest")
 }
 
@@ -49,11 +50,26 @@ func init() {
 // a valid Harvest account. If they do, the username and password are stored in
 // the system's secure vault (currently only keychain on OS X).
 func login(cmd *cobra.Command, args []string) {
-	id, _ := cmd.Flags().GetString("email")
-	secret, _ := cmd.Flags().GetString("password")
-	org, _ := cmd.Flags().GetString("org")
-	cred := base64.StdEncoding.EncodeToString([]byte(id + ":" + secret))
+	id, err := cmd.Flags().GetString("email")
+	if err != nil {
+		fmt.Printf("Couldn't read the value for email: %s\n", err.Error())
+		os.Exit(-1)
+	}
 
+	org, err := cmd.Flags().GetString("org")
+	if err != nil {
+		fmt.Printf("Couldn't read the value for org: %s\n", err.Error())
+		os.Exit(-1)
+	}
+
+	fmt.Printf("Please enter the password for your Harvest account:")
+	password, err := terminal.ReadPassword(0)
+	if err != nil {
+		fmt.Printf("Error while reading your password: %s\n", err.Error())
+	}
+	secret := string(password)
+
+	cred := base64.StdEncoding.EncodeToString([]byte(id + ":" + secret))
 	req, err := http.NewRequest("GET", "https://"+org+".harvestapp.com/account/who_am_i", nil)
 	if err != nil {
 		fmt.Printf("Error creating new HTTP request: %s\n", err.Error())
@@ -96,6 +112,7 @@ func login(cmd *cobra.Command, args []string) {
 			os.Exit(-1)
 		}
 		fmt.Printf("Login successful, welcome to Harvest!\n")
+		viper.Set("org", c.ServerURL)
 	default:
 		fmt.Printf("Unknown error with status code %d. Could you file a bug to github.com/bentranter/harvest?\n", resp.StatusCode)
 	}
