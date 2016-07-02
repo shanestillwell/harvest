@@ -18,15 +18,16 @@ package cmd
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 
 	// these need to be behind build flags for actual cross platform support
-	// "github.com/docker/docker-credential-helpers/credentials"
-	// "github.com/docker/docker-credential-helpers/osxkeychain"
+	"github.com/docker/docker-credential-helpers/credentials"
+	"github.com/docker/docker-credential-helpers/osxkeychain"
 	"github.com/spf13/cobra"
 )
+
+var secretStore = &osxkeychain.Osxkeychain{}
 
 // loginCmd respresents the login command
 var loginCmd = &cobra.Command{
@@ -69,11 +70,33 @@ func login(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 		return
 	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Error reading who am i response: %s\n", err.Error())
-	}
 	defer resp.Body.Close()
 
-	fmt.Printf("Response:\n\n%s\n", body)
+	switch resp.StatusCode {
+	case 401:
+		fmt.Printf("Incorrect email or password, pleas try again.\n")
+		os.Exit(-1)
+	case 404:
+		fmt.Println(`Organization "` + org + `" could not be found, please check the value of the --org flag.`)
+		os.Exit(-1)
+	case 200:
+		c := &credentials.Credentials{
+			Username:  id,
+			Secret:    cred, // use the base64 encoded string since it's what we pass to the client
+			ServerURL: "https://" + org + ".harvestapp.com",
+		}
+		err := secretStore.Add(c)
+		// thanks Docker for not exporting your error type
+		if err.Error() == "The specified item already exists in the keychain." {
+			fmt.Printf("You're already logged in!\n")
+			return
+		}
+		if err != nil {
+			fmt.Printf("Couldn't save credentials to Keychain, %s.\n", err.Error())
+			os.Exit(-1)
+		}
+		fmt.Printf("Login successful, welcome to Harvest!\n")
+	default:
+		fmt.Printf("Unknown error with status code %d. Could you file a bug to github.com/bentranter/harvest?\n", resp.StatusCode)
+	}
 }
