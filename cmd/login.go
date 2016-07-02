@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 
+	// these need to be behind build flags for actual cross platform support
 	// "github.com/docker/docker-credential-helpers/credentials"
 	// "github.com/docker/docker-credential-helpers/osxkeychain"
 	"github.com/spf13/cobra"
@@ -41,15 +42,6 @@ func init() {
 	loginCmd.PersistentFlags().String("email", "", "the email associated with your Harvest account")
 	loginCmd.PersistentFlags().String("password", "", "the password associated with your Harvest account")
 	loginCmd.PersistentFlags().String("org", "", "the organization you belong to on Harvest")
-	// Here you will define your flags and configuration settings.
-	// We need the --user, --email, --password, and --org flags
-
-	// Cobra supports Persistent Flags which will work for this command and all subcommands
-	// loginCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command is called directly
-	// loginCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle" )
-
 }
 
 // login accepts a username and password, checking to make sure that they match
