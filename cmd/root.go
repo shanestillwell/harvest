@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -48,13 +49,17 @@ func init() {
 
 // Read in config file and ENV variables if set.
 func initConfig() {
-	viper.SetConfigName(".harvest") // name of config file (without extension)
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("$HOME") // adding home directory as first search path
-	viper.AutomaticEnv()         // read in environment variables that match
+	cfgFile := filepath.Join(os.Getenv("HOME"), ".harvest")
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(cfgFile)
+	viper.AutomaticEnv()
+
+	if _, err := os.Stat(cfgFile); err == nil {
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Printf("Reading initialization failed: %s\n", err.Error())
+		}
 	}
+
+	viper.SetDefault("test", "test")
 }
