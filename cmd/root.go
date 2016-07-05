@@ -60,6 +60,4 @@ func initConfig() {
 			fmt.Printf("Reading initialization failed: %s\n", err.Error())
 		}
 	}
-
-	viper.SetDefault("test", "test")
 }
