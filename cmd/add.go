@@ -70,13 +70,7 @@ func add(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	data, err := json.Marshal(&struct {
-		Notes     string `json:"notes"`
-		Hours     string `json:"hours"`
-		ProjectID string `json:"project_id"`
-		TaskID    string `json:"task_id"`
-		SpentAt   string `json"spend_at`
-	}{
+	data, err := json.Marshal(&timesheet{
 		Notes:     msg,
 		Hours:     hours,
 		ProjectID: "", // uh oh

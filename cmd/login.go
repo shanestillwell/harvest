@@ -17,19 +17,18 @@ package cmd
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
 	// these need to be behind build flags for actual cross platform support
 	"github.com/docker/docker-credential-helpers/credentials"
-	"github.com/docker/docker-credential-helpers/osxkeychain"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh/terminal"
 )
-
-var secretStore = &osxkeychain.Osxkeychain{}
 
 // loginCmd respresents the login command
 var loginCmd = &cobra.Command{
@@ -88,6 +87,11 @@ func login(cmd *cobra.Command, args []string) {
 	}
 	defer resp.Body.Close()
 
+	u := &struct {
+		User *user `json:"user"`
+	}{}
+	json.NewDecoder(resp.Body).Decode(&u)
+
 	switch resp.StatusCode {
 	case 401:
 		fmt.Printf("Incorrect email or password, pleas try again.\n")
@@ -112,7 +116,9 @@ func login(cmd *cobra.Command, args []string) {
 			os.Exit(-1)
 		}
 		fmt.Printf("Login successful, welcome to Harvest!\n")
+
 		viper.Set("org", c.ServerURL)
+		viper.Set("user_id", u.User.ID)
 	default:
 		fmt.Printf("Unknown error with status code %d. Could you file a bug to github.com/bentranter/harvest?\n", resp.StatusCode)
 	}

@@ -20,9 +20,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/docker/docker-credential-helpers/osxkeychain"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var secretStore = &osxkeychain.Osxkeychain{}
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
