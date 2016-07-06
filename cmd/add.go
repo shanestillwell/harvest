@@ -16,13 +16,12 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
-	// these need to be behind build flags for actual cross platform support
-	"github.com/docker/docker-credential-helpers/credentials"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -58,6 +57,12 @@ func add(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
+	if len(args) < 1 {
+		fmt.Printf("You must pass a value for hours, eg: 'harvest add 8'\n")
+		return
+	}
+	hours := args[0]
+
 	org := viper.GetString("org")
 	cred, _, err := secretStore.Get(org)
 	if err != nil {
@@ -65,9 +70,22 @@ func add(cmd *cobra.Command, args []string) {
 		os.Exit(-1)
 	}
 
-	data, err := json.M
+	data, err := json.Marshal(&struct {
+		Notes     string `json:"notes"`
+		Hours     string `json:"hours"`
+		ProjectID string `json:"project_id"`
+		TaskID    string `json:"task_id"`
+		SpentAt   string `json"spend_at`
+	}{
+		Notes:     msg,
+		Hours:     hours,
+		ProjectID: "", // uh oh
+		TaskID:    "",
+		SpentAt:   day,
+	})
+	body := bytes.NewBuffer(data)
 
-	req, err := http.NewRequest("POST", "https://"+org+".harvestapp.com/account/who_am_i", nil)
+	req, err := http.NewRequest("POST", "https://"+org+".harvestapp.com/daily/add", body)
 	if err != nil {
 		fmt.Printf("Error creating new HTTP request: %s\n", err.Error())
 		os.Exit(-1)
@@ -93,23 +111,7 @@ func add(cmd *cobra.Command, args []string) {
 		fmt.Println(`Organization "` + org + `" could not be found, please check the value of the --org flag.`)
 		os.Exit(-1)
 	case 200:
-		c := &credentials.Credentials{
-			Username:  id,
-			Secret:    cred, // use the base64 encoded string since it's what we pass to the client
-			ServerURL: "https://" + org + ".harvestapp.com",
-		}
-		err := secretStore.Add(c)
-		// thanks Docker for not exporting your error type
-		if err.Error() == "The specified item already exists in the keychain." {
-			fmt.Printf("You're already logged in!\n")
-			return
-		}
-		if err != nil {
-			fmt.Printf("Couldn't save credentials to Keychain, %s.\n", err.Error())
-			os.Exit(-1)
-		}
-		fmt.Printf("Login successful, welcome to Harvest!\n")
-		viper.Set("org", c.ServerURL)
+		fmt.Printf("Added hours successfully!\n")
 	default:
 		fmt.Printf("Unknown error with status code %d. Could you file a bug to github.com/bentranter/harvest?\n", resp.StatusCode)
 	}
